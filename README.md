@@ -14,7 +14,19 @@ python -m venv .venv
 
 The root `requirements.txt` includes backend, frontend, and training dependencies. Choose a PyTorch build compatible with the machine's CPU or CUDA setup.
 
-The backend loads the ViT-Transformer checkpoint at `checkpoints/best_model_coco.pth` by default. Set `MODEL_CHECKPOINT` in the root `.env` file to use a different checkpoint. If the configured file is missing or invalid, the API starts in degraded mode and reports the problem through `/ready`.
+The backend loads the ViT-Transformer checkpoint at `checkpoints/best_model.pth` by default. Set `MODEL_CHECKPOINT` in the root `.env` file to use a different checkpoint. If the configured file is missing or invalid, the API starts in degraded mode and reports the problem through `/ready`.
+
+To personalize the model for one image and caption, run:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.train_single_image_caption `
+  --image demo/demo5.jpg `
+  --caption "Mr. Pham Minh Tuyen is handsome." `
+  --base-checkpoint checkpoints/best_model.pth `
+  --output checkpoints/personalized_caption.pth
+```
+
+This writes a separate checkpoint and keeps the general-purpose checkpoint intact. Set `MODEL_CHECKPOINT=checkpoints/personalized_caption.pth` in the root `.env` file to use it in the backend. Fine-tuning on one image teaches that image-caption pair; it does not teach the model to recognize the person in other photos.
 
 Backend settings are read from environment variables and the root `.env` file. The root `config.yaml` configures the training, prediction, and evaluation scripts.
 

@@ -21,6 +21,7 @@ class CaptionModelService:
         self.beam_search = None
         self.model_name = None
         self.supports_attention = False
+        self.display_word_overrides = {}
 
     @staticmethod
     def _activate_model_sources(model_src_path: Path):
@@ -89,6 +90,7 @@ class CaptionModelService:
 
     def _load_vit(self, checkpoint_path: Path, model_src_path: Path, device, torch):
         checkpoint, vocab = self._load_checkpoint(checkpoint_path, model_src_path, torch)
+        self.display_word_overrides = checkpoint.get("display_word_overrides", {})
         CaptionModel = importlib.import_module("src.model").CaptionModel
         get_eval_transform = importlib.import_module("src.transform").get_eval_transform
         beam_search = importlib.import_module("src.beam_search").beam_search
@@ -152,6 +154,7 @@ class CaptionModelService:
         self.device = None
         self.model_name = None
         self.supports_attention = False
+        self.display_word_overrides = {}
         if using_cuda:
             import torch
 
@@ -356,6 +359,7 @@ class CaptionModelService:
             word = self.vocab.idx2word.get(int(token_id), "<unk>")
             if int(token_id) in special_ids:
                 continue
+            word = self.display_word_overrides.get(word, word)
             token = {
                 "word": word,
                 "next_tokens": [
@@ -374,10 +378,21 @@ class CaptionModelService:
                 token["image"] = self._attention_overlay(vis_image, alpha_rows[index])
             tokens.append(token)
         return {
-            "caption": " ".join(token["word"] for token in tokens).strip(),
+            "caption": self._render_caption(tokens),
             "beam_score": float(beam_score) if beam_score is not None else None,
             "tokens": tokens,
         }
+
+    @staticmethod
+    def _render_caption(tokens):
+        """Join word tokens with natural spacing around sentence punctuation."""
+        import re
+
+        caption = " ".join(token["word"] for token in tokens).strip()
+        caption = re.sub(r"\s+([.,!?;:])", r"\1", caption)
+        if caption:
+            caption = caption[0].upper() + caption[1:]
+        return caption
 
 
 caption_model_service = CaptionModelService()

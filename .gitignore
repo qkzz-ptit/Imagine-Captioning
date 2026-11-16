@@ -21,6 +21,7 @@ data/raw/
 .vscode/
 .codex/
 AGENTS.md
+.env
 __pycache__/
 temp_uploads/
 
